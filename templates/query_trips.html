@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Search Trips</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: #f7f7f7;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            text-align: center;
+        }
+        #searchTripsForm {
+            margin: 20px;
+        }
+        .trip {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            background-color: #fff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .disabled, .disabled:hover {
+            background-color: #ccc;
+            color: #666;
+            cursor: not-allowed;
+        }
+        input[type="text"] {
+            padding: 10px;
+            width: 250px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+  
+    </style>
+</head>
+<body>
+    <!-- Search Form -->
+    <form id="searchTripsForm">
+        <input type="text" id="searchLocation" placeholder="Enter a location to search for trips">
+        <button type="submit">Search Trips</button>
+    </form>
+
+    <!-- Area to display search results -->
+    <div id="searchResults"></div>
+
+   
+    <script>
+        $(document).ready(function() {
+            $('#searchTripsForm').submit(function(event) {
+                event.preventDefault();
+                var searchLocation = $('#searchLocation').val().trim();
+
+                if (!searchLocation) {
+                    alert("Please enter a location to search.");
+                    return;
+                }
+
+                $.ajax({
+                    url: '/query-new-trips',
+                    type: 'GET',
+                    data: { location: searchLocation },
+                    success: function(matchingTrips) {
+                        $('#searchResults').empty();
+                        if (matchingTrips.length === 0) {
+                            $('#searchResults').append('<p>No trips found for this location.</p>');
+                        } else {
+                            matchingTrips.forEach(function(trip) {
+                                var tripElement = '<div class="trip">' +
+                                                  '<h3>Location: ' + trip.location + '</h3>' +
+                                                  '<p>Date and Time: ' + trip.datetime + '</p>' +
+                                                  '<p>Weather: ' + trip.weather_info + '</p>' +
+                                                  '<button class="expressInterestBtn" data-trip-id="' + trip.trip_id + '">Express Interest</button>' +
+                                                  '</div>';
+                                $('#searchResults').append(tripElement);
+                            });
+
+                            $('.expressInterestBtn').click(function() {
+                                var tripId = $(this).data('trip-id');
+                                expressInterest(tripId, this);
+                            });
+                        }
+                    },
+                    error: function(error) {
+                        console.log('Error querying trips:', error);
+                    }
+                });
+            });
+
+            function expressInterest(tripId, button) {
+                $.ajax({
+                    url: '/express-interest',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ tripId: tripId }),
+                    success: function(response) {
+                        alert('Interest expressed successfully!');
+                        $(button).addClass('disabled').prop('disabled', true);
+                    },
+                    error: function(error) {
+                        var errorMsg = error.responseJSON && error.responseJSON.error ? error.responseJSON.error : 'Error expressing interest';
+                        alert(errorMsg);
+                        $(button).addClass('disabled').prop('disabled', true);
+                    }
+                });
+            };
+        });
+    </script>
+</body>
+</html>
+
+
+

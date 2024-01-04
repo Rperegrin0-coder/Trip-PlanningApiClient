@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Suggest Trip</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBPELEebdsZFbEQGkbHMKVvVSxu5PJ9jec&libraries=places"></script>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: rgb(143, 246, 255);
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            text-align: center;
+            color: #333;
+        }
+        h2 {
+            margin-bottom: 20px;
+        }
+        form {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            display: inline-block;
+        }
+        label, input, button {
+            display: block;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        input[type="text"], input[type="datetime-local"] {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h2>Suggest Trip</h2>
+    <form id="suggestTripForm">
+        <label for="location">Location:</label>
+        <input type="text" id="location" name="location" required autocomplete="off">
+        
+        <label for="datetime">Datetime:</label>
+        <input type="datetime-local" id="datetime" name="datetime" required>
+        
+        <!-- Other fields as required -->
+
+        <button id="suggestTripBtn">Suggest Trip</button>
+    </form>
+
+    <!-- Script for form submission -->
+    <script>
+        $(document).ready(function() {
+            var autocomplete = new google.maps.places.Autocomplete(document.getElementById('location'));
+
+            $('#suggestTripForm').submit(function(event) {
+                event.preventDefault();
+    
+                var formData = {
+                    location: $('#location').val(),
+                    datetime: $('#datetime').val(),
+                    // Add other form fields as needed
+                };
+    
+                console.log('formData:', formData);
+    
+                $.ajax({
+                    url: '/suggest_trip',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(formData),
+                    success: function(response) {
+                        // Assuming 'weather_info' is part of the response object
+                        var weatherDetails = response.weather_info || 'No weather details available';
+                        alert('Your trip has been proposed. Weather details: ' + weatherDetails);
+
+                        // Redirect after showing the alert, or use a modal and set a timeout
+                        setTimeout(function() {
+                            window.location.href = '/Travelbuddyhome';
+                        }, 5000); // Redirect after 5 seconds
+                    },
+                    error: function() {
+                        alert('An error occurred while suggesting the trip.');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

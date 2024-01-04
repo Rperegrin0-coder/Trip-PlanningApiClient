@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Check Interests</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            color: #333;
+        }
+        h1 {
+            margin-top: 20px;
+            color: #007bff;
+        }
+        #interestResults {
+            margin: 20px auto;
+            width: 80%;
+            max-width: 800px;
+        }
+        .interest-section {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            text-align: left;
+        }
+        .trip-details {
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        p {
+            margin: 10px 0;
+        }
+        strong {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>Interests in My Trips</h1>
+    <div id="interestResults">
+        <!-- Server-side template rendering logic -->
+        {% if interests %}
+            {% for interest in interests %}
+                <div class="interest-section">
+                    <p>User {{ interest.interested_user_email }} is interested in trip {{ interest.trip_id }}</p>
+                    <div class="trip-details">
+                        <p><strong>Location:</strong> {{ interest.trip_details.location }}</p>
+                        <p><strong>Date and Time:</strong> {{ interest.trip_details.datetime }}</p>
+                        <p><strong>Weather Info:</strong> {{ interest.trip_details.weather_info }}</p>
+                        <!-- Add more trip details as needed -->
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No interests found.</p>
+        {% endif %}
+    </div>
+</body>
+</html>

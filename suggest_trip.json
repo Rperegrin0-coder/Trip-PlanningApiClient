@@ -1,0 +1,76 @@
+{
+    "trips": [
+        {
+            "trip_id": "GD837",
+            "user_id": "827",
+            "user_email": "123raheemp.taiwo@gmail.com",
+            "location": "Romania",
+            "datetime": "2023-12-21T20:00:00",
+            "weather_info": "The weather is 4 degrees on 2023-12-21 20:00:00 at Romania"
+        },
+        {
+            "trip_id": "KG952",
+            "user_id": "96",
+            "user_email": "xsania@gmail.com",
+            "location": "Delhi, India",
+            "datetime": "2023-12-22T20:00:00",
+            "weather_info": "The weather is 23 degrees on 2023-12-22 20:00:00 at Delhi, India"
+        },
+        {
+            "trip_id": "RZ813",
+            "user_id": "96",
+            "user_email": "xsania@gmail.com",
+            "location": "Germany",
+            "datetime": "2023-12-22T20:00:00",
+            "weather_info": "The weather is 3 degrees on 2023-12-22 20:00:00 at Germany"
+        },
+        {
+            "trip_id": "YQ800",
+            "user_id": "827",
+            "user_email": "123raheemp.taiwo@gmail.com",
+            "location": "Tokyo, Japan",
+            "datetime": "2023-12-28T20:00:00",
+            "weather_info": "The weather is 5 degrees on 2023-12-28 20:00:00 at Tokyo, Japan"
+        },
+        {
+            "trip_id": "VE236",
+            "user_id": "827",
+            "user_email": "123raheemp.taiwo@gmail.com",
+            "location": "Japan",
+            "datetime": "2023-12-08T08:08:00",
+            "weather_info": "The weather is -2 degrees on 2023-12-08 08:08:00 at Japan"
+        },
+        {
+            "trip_id": "QT575",
+            "user_id": "827",
+            "user_email": "123raheemp.taiwo@gmail.com",
+            "location": "Malta",
+            "datetime": "2024-01-03T15:00:00",
+            "weather_info": "The weather is 16 degrees on 2024-01-03 15:00:00 at Malta"
+        },
+        {
+            "trip_id": "IR49",
+            "user_id": "827",
+            "user_email": "123raheemp.taiwo@gmail.com",
+            "location": "Haiti",
+            "datetime": "2024-01-11T07:00:00",
+            "weather_info": "The weather is 26 degrees on 2024-01-11 07:00:00 at Haiti"
+        },
+        {
+            "trip_id": "RQ245",
+            "user_id": "827",
+            "user_email": "123raheemp.taiwo@gmail.com",
+            "location": "Maldives",
+            "datetime": "2024-01-04T08:00:00",
+            "weather_info": "The weather is 28 degrees on 2024-01-04 08:00:00 at Maldives"
+        },
+        {
+            "trip_id": "AR739",
+            "user_id": "827",
+            "user_email": "123raheemp.taiwo@gmail.com",
+            "location": "Mexico",
+            "datetime": "2021-09-09T02:00:00",
+            "weather_info": "The weather is 8 degrees on 2021-09-09 02:00:00 at Mexico"
+        }
+    ]
+}

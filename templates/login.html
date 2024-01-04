@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Login</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#loginForm').submit(function(event) {
+                event.preventDefault(); // Prevent default form submission
+                
+                var formData = {
+                    email: $('#email').val(),
+                    password: $('#password').val()
+                };
+
+                $.ajax({
+                    url: '/login-page',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(formData),
+                    success: function(response) {
+                        console.log('Login successful:', response);
+                        if (response.message === 'Login successful') {
+                            window.location.href = '/Travelbuddyhome';
+                        } else {
+                            $('#loginError').text(response.message); // Display error message
+                        }
+                    },
+                    error: function(error) {
+                        console.log('Error logging in:', error);
+                        $('#loginError').text('An error occurred during login.');
+                    }
+                });
+            });
+        });
+    </script>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-image: url('https://tourscanner.com/blog/wp-content/uploads/2023/04/The-Maldives.jpg');
+            background-size: cover;
+            background-position: center;
+        }
+        .container {
+            text-align: center;
+            padding: 50px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 100px;
+        }
+        h2 {
+            color: #333;
+        }
+        form {
+            display: inline-block;
+            text-align: left;
+            max-width: 300px;
+        }
+        label, input {
+            display: block;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        input[type="email"], input[type="password"] {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        input[type="submit"] {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+        }
+        input[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+        a {
+            color: #007bff;
+        }
+        #loginError {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Login</h2>
+        <form id="loginForm">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+            
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+            
+            <input type="submit" value="Login">
+        </form>
+        <p>Don't have an account? <a href="/register-page">Register here</a>.</p>
+        <p id="loginError"></p> <!-- Display error message here -->
+    </div>
+</body>
+</html>
