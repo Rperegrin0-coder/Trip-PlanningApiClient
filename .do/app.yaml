@@ -1,0 +1,15 @@
+name: Service-Centric
+
+services:
+
+- environment_slug: python
+
+  github:
+
+    branch: main
+
+    deploy_on_push: true
+
+    repo: Rperegrin0-coder/Service-Centric
+
+  name: Service-Centric
