@@ -126,7 +126,8 @@ def check_interests_route():
 
     return render_template('check_interest.html', interests=interest_data)
 
-if __name__ == '__main__':
-    app.secret_key = '3Equantum'
-    app.run(debug=True)
+app.secret_key = '3Equantum'
+#app.run(debug=True)
+
+#if __name__ == '__main__':
     
