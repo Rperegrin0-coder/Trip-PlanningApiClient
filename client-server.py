@@ -132,17 +132,6 @@ app.secret_key = '3Equantum'
 
 
 
-app.run(debug=True) 
-
 if __name__ == '__main__':
-    user_data = {
-        "email": "example@email.com",
-        "password": "password123"
-    }
-    result = orchestrate_registration(user_data)
-    print(result)
-
-
-
-
-
+    # Start the Flask application in debug mode
+    app.run(debug=True)
