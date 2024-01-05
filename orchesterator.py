@@ -14,7 +14,7 @@ from pymongo import MongoClient
 
 
 # MongoDB connection details
-mongo_uri = "mongodb://doadmin:ro243kLaD0GN5796@mongodb+srv://db-mongodb-nyc3-59765-a337414d.mongo.ondigitalocean.com:212.82.91.214/admin"
+mongo_uri = "mongodb://doadmin:ro243kLaD0GN5796@mongodb+srv://db-mongodb-nyc3-59765-a337414d.mongo.ondigitalocean.com:212.82.91.214/TravelBuddy"
 client = MongoClient(mongo_uri)
 db = client.get_database()
 def generate_user_id():
