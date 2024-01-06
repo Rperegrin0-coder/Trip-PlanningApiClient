@@ -13,7 +13,16 @@ from flask_sqlalchemy import SQLAlchemy
 from pymongo import MongoClient
 
 
+# MongoDB connection details
+mongo_uri = "mongodb+srv://123raheemptaiwo:5lZUhqFSLy7ve9NU@cluster0.1wosbmg.mongodb.net/?retryWrites=true&w=majority"
+
+mongodb_client = MongoClient(mongo_uri)
+db = mongodb_client["cloud-coursework"]
+print("Connected to the MongoDB database!")
+
 def generate_user_id():
+
+
     # Make a GET request to the external service to fetch a random user ID
     url = 'https://www.random.org/integers/?num=1&min=1&max=1000&col=1&base=10&format=plain&rnd=new'
     
@@ -50,57 +59,47 @@ def generate_trip_id():
 
 
 def get_matching_trips(search_location, user_id):
-    json_file_path = os.path.join(os.getcwd(), 'suggest_trip.json')
     matching_trips = []
 
     try:
-        
+        # Query MongoDB for all trips matching the search location and excluding the current user's trips
+        all_trips = db.proposed_trips.find({
+            "location": {"$regex": f"^{search_location}$", "$options": "i"},
+            "user_id": {"$ne": user_id}
+        })
 
-        # Check if the file exists
-        if os.path.exists(json_file_path):
-            with open(json_file_path, 'r', encoding='utf-8') as file:
-                data = json.load(file)
-                all_trips = data.get('trips', [])
-                print(f"Total trips found: {len(all_trips)}")  # Print the total number of trips
+        matching_trips = list(all_trips)
+        print(f"Total matching trips found: {len(matching_trips)}")  # Print the total number of matching trips
 
-            # Filter trips based on the search location and exclude current user's trips
-            for trip in all_trips:
-                if trip['location'].lower() == search_location.lower() and trip['user_id'] != user_id:
-                    matching_trips.append(trip)
-                    print(f"Matching trip ID: {trip['trip_id']}")  # Print each matching trip ID
-
-            print(f"Total matching trips found: {len(matching_trips)}")  # Print the total number of matching trips
     except Exception as e:
-        print(f"Error reading from suggest_trip.json: {e}")  # Print any errors encountered
+        print(f"Error querying matching trips: {e}")  # Print any errors encountered
         raise
 
     return matching_trips
 
 def query_new_trips(search_location, exclude_user_id):
-    json_file_path = os.path.join(os.getcwd(), 'suggest_trip.json')
     try:
-        with open(json_file_path, 'r', encoding='utf-8') as file:
-            data = json.load(file)
-            # Filter trips based on location and exclude trips by the current user
-            matching_trips = [trip for trip in data['trips'] 
-                              if trip['location'].lower() == search_location.lower() 
-                              and trip['user_id'] != exclude_user_id]
-        return matching_trips
-    except FileNotFoundError:
-        raise FileNotFoundError('File not found.')
-    except json.JSONDecodeError:
-        raise Exception('Error decoding JSON.')
+        # Query MongoDB for trips matching the location and excluding the current user
+        matching_trips = db.proposed_trips.find({
+            "location": {"$regex": f"^{search_location}$", "$options": "i"},
+            "user_id": {"$ne": exclude_user_id}
+        })
 
+        return list(matching_trips)
+
+    except Exception as e:
+        raise Exception(f"Error querying new trips: {e}")
 
 
 
 
 def propose_new_trip(location, datetime_str, user_id):
     try:
-        # Retrieve user's email
-        user_email = get_user_email(user_id)
-        if not user_email:
-            return {'error': 'User email not found'}
+        # Retrieve user's email from MongoDB
+        user = db.users.find_one({"userID": user_id})
+        if not user:
+            return {'error': 'User not found'}
+        user_email = user['email']
 
         # Ensure the datetime is in the correct format
         formatted_datetime = datetime.strptime(datetime_str, "%Y-%m-%dT%H:%M")
@@ -132,29 +131,14 @@ def propose_new_trip(location, datetime_str, user_id):
                 'weather_info': weather_response
             }
 
-            # File path for the JSON file
-            json_file_path = os.path.join(os.getcwd(), 'suggest_trip.json')
+            # Insert trip data into the MongoDB 'proposed_trips' collection
+            db.proposed_trips.insert_one(new_trip)
 
-            # Check if file exists, create it if not
-            if not os.path.isfile(json_file_path):
-                with open(json_file_path, 'w', encoding='utf-8') as file:
-                    json.dump({'trips': []}, file)
-
-            # Write trip data to the file
-            with open(json_file_path, 'r+', encoding='utf-8') as file:
-                data = json.load(file)
-                data['trips'].append(new_trip)
-                file.seek(0)
-                json.dump(data, file, indent=4)
-
-            return {'message': 'Trip suggested successfully'}
+            return {'message': 'Trip suggested successfully',
+                    'weather_info': weather_response}
         else:
             return {'error': 'Unable to fetch weather information'}
 
-    except FileNotFoundError as e:
-        return {'error': str(e)}
-    except PermissionError as e:
-        return {'error': str(e)}
     except Exception as e:
         return {'error': str(e)}
 
@@ -189,99 +173,76 @@ def geocode_location(location):
         return None  # An error occurred during geocoding
 
 def update_user_interests(user_id, trip_id):
-    json_file_path = os.path.join(os.getcwd(), 'user_interest.json')
     try:
-        # Read existing interests
-        if os.path.exists(json_file_path):
-            with open(json_file_path, 'r', encoding='utf-8') as file:
-                data = json.load(file)
-                interests = data.get("userInterests", {})
-        else:
-            interests = {}
+        # Check if the user has already expressed interest in this trip
+        existing_interest = db.user_interests.find_one(
+            {"_id": f"user_{user_id}", f"user_{user_id}": trip_id}
+        )
 
-        # Update interests
-        user_key = f"user_{user_id}"
-        if user_key in interests:
-            if trip_id not in interests[user_key]["interestedTripIds"]:
-                interests[user_key]["interestedTripIds"].append(trip_id)
-            else:
-                # User has already expressed interest in this trip
-                return {'error': 'Interest already expressed in this trip'}
-        else:
-            interests[user_key] = {"interestedTripIds": [trip_id]}
+        if existing_interest:
+            return {'error': 'Interest already expressed in this trip'}
 
-        # Write back to file
-        with open(json_file_path, 'w', encoding='utf-8') as file:
-            json.dump({"userInterests": interests}, file, indent=4)
+        # Update user interests in MongoDB
+        db.user_interests.update_one(
+            {"_id": f"user_{user_id}"},
+            {"$addToSet": {f"user_{user_id}": trip_id}},
+            upsert=True
+        )
+
+        return {'message': 'Interest recorded successfully'}
 
     except Exception as e:
         raise Exception(f"Error updating user interests: {e}")
 
-    return {'message': 'Interest recorded successfully'}
-
     
 def check_interests(user_id):
-    json_file_path = os.path.join(os.getcwd(), 'suggest_trip.json')
-    user_interest_path = os.path.join(os.getcwd(), 'user_interest.json')
-    interest_data = []
-
     try:
-        # Load proposed trips
-        if os.path.exists(json_file_path):
-            with open(json_file_path, 'r', encoding='utf-8') as file:
-                proposed_trips = json.load(file).get('trips', [])
-            print("Loaded proposed trips:", proposed_trips)  # Debugging line
-        else:
-            print("No proposed trips found.")  # Debugging line
+        # Query MongoDB for proposed trips related to the user
+        proposed_trips = db.proposed_trips.find({"user_id": user_id})
 
-        # Load user interests
-        if os.path.exists(user_interest_path):
-            with open(user_interest_path, 'r', encoding='utf-8') as file:
-                user_interests = json.load(file).get('userInterests', {})
-            print("Loaded user interests:", user_interests)  # Debugging line
-        else:
-            print("No user interests found.")  # Debugging line
-
-        # Check for interests in the user's proposed trips
+        interest_data = []
         for trip in proposed_trips:
-            if trip['user_id'] == user_id:
-                for interested_user_id, trips in user_interests.items():
-                    if trip['trip_id'] in trips.get('interestedTripIds', []):
-                        # Remove 'user_' prefix from interested_user_id
-                        formatted_user_id = interested_user_id.replace('user_', '')
-                        interested_user_email = get_user_email(formatted_user_id)
-                        if interested_user_email:
-                            # Include trip details in the interest data
-                            interest_data.append({
-                                'interested_user_email': interested_user_email,
-                                'trip_id': trip['trip_id'],
-                                'trip_details': trip  # Include the entire trip object
-                            })
+            trip_id = trip['trip_id']
+
+            # Query MongoDB for users interested in the trip
+            interested_users = db.user_interests.find({
+                f"user_{user_id}": {"$in": [trip_id]}
+            })
+
+            for interested_user in interested_users:
+                # Remove 'user_' prefix from interested user ID
+                formatted_user_id = interested_user['_id'].replace('user_', '')
+
+                # Query MongoDB for the interested user's email
+                interested_user_email = db.users.find_one(
+                    {"userID": formatted_user_id},
+                    {"_id": 0, "email": 1}
+                )
+
+                if interested_user_email:
+                    # Include trip details in the interest data
+                    interest_data.append({
+                        'interested_user_email': interested_user_email['email'],
+                        'trip_id': trip_id,
+                        'trip_details': trip  # Include the entire trip object
+                    })
+
+        return interest_data
+
     except Exception as e:
         print(f"Error checking interests: {e}")
         raise
 
-    print("Final interest data:", interest_data)  # Debugging line
-    return interest_data
-
 def orchestrate_registration(user_data):
-    file_path = 'user_data.json'
-
     try:
-        if os.path.isfile(file_path):
-            with open(file_path, 'r', encoding='utf-8') as file:
-                data = json.load(file)
-        else:
-            data = {'users': []}
-
-        # Check if the email already exists
-        for existing_user in data['users']:
-            if existing_user['email'] == user_data['email']:
-                return {"message": "Email already exists. Please use a different email."}
+        # Check if the email already exists in the database
+        existing_user = db.users.find_one({"email": user_data['email']})
+        if existing_user:
+            return {"message": "Email already exists. Please use a different email."}
 
         hashed_password = generate_password_hash(user_data['password'])
 
-        # Generate a random 'userID' using the external service
+        # Generate a random 'userID' using the external service or other method
         user_id = generate_user_id()
 
         new_user = {
@@ -290,48 +251,47 @@ def orchestrate_registration(user_data):
             'password': hashed_password
         }
 
-        data['users'].append(new_user)
-
-
-        with open(file_path, 'w', encoding='utf-8') as file:
-            json.dump(data, file, indent=4)
+        # Insert the new user into the MongoDB 'users' collection
+        db.users.insert_one(new_user)
 
         return {"message": "User registered successfully"}
-    
+
     except Exception as e:
         return {"error": str(e)}
 
 def orchestrate_login(login_credentials):
-    with open('user_data.json', 'r', encoding='utf-8') as file:
-        data = json.load(file)
+    try:
+        # Ensure 'email' and 'password' are provided in login_credentials
+        if 'email' not in login_credentials or 'password' not in login_credentials:
+            return {"message": "Email and password are required"}
 
-    print("Login Credentials:", login_credentials)  # Print login credentials
+        # Query the MongoDB 'users' collection for the user with the provided email
+        user = db.users.find_one({"email": login_credentials['email']})
 
-    if 'email' not in login_credentials:
-        return {"message": "Email not provided"}  # Return an error message if 'email' is missing
-
-    for user in data['users']:
-        print("User:", user['email'], user['password'])  # Print each user's email and password
-        if user['email'] == login_credentials['email']:
+        if user:
+            # Check if the provided password matches the stored hashed password
             if check_password_hash(user['password'], login_credentials['password']):
                 # Include the user ID in the response
                 return {"message": "Login successful", "user_id": user['userID']}
             else:
                 return {"message": "Invalid password"}
-    
-    return {"message": "Invalid email or password"}
+        else:
+            return {"message": "Invalid email or password"}
+
+    except Exception as e:
+        return {"error": str(e)}
 
 
 def get_user_email(user_id):
-    json_file_path = os.path.join(os.getcwd(), 'user_data.json')
     try:
-        with open(json_file_path, 'r', encoding='utf-8') as file:
-            data = json.load(file)
-            for user in data.get('users', []):
-                if user.get('userID') == user_id:
-                    return user.get('email')
+        # Query the MongoDB 'users' collection for the user with the provided user_id
+        user = db.users.find_one({"userID": user_id})
+
+        if user:
+            return user.get('email')
+        else:
             return None
-    except FileNotFoundError:
-        raise FileNotFoundError('User data file not found.')
-    except json.JSONDecodeError:
-        raise Exception('Error decoding JSON from user data file.')
+
+    except Exception as e:
+        raise e
+
