@@ -64,6 +64,11 @@
             "userID": "807",
             "email": "raheemxsania@gmail.com",
             "password": "scrypt:32768:8:1$pZ1okg0Uyv3IpRXA$bb3e907549af6eb361ae2e8b5a0213016adfdb298882e268885d1e0b486d4be3c68fbeefcebba3bb08856d53483590bd76ed2c89e064afa7fa772b976482c582"
+        },
+        {
+            "userID": "968",
+            "email": "zainab@GMAIL.COM",
+            "password": "scrypt:32768:8:1$3HZYAMFAbJao0GX6$ac94a8fdcb75a3c39aaf22f41b34fb6eb31225d38aa73b06f95649cd790ac90e7d6c6084012f5d6e253abbe33a9c819203d111121c0a83cf75bd4a97bb7521e3"
         }
     ]
 }
