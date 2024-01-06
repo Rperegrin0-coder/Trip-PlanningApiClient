@@ -75,23 +75,29 @@
    
     <script>
         $(document).ready(function() {
-            // Initialize Google Places Autocomplete
             var autocomplete = new google.maps.places.Autocomplete(
                 document.getElementById('searchLocation'),
                 { types: ['geocode'] }
             );
-    
-            // Form submission event
+
+            autocomplete.addListener('place_changed', function() {
+                var place = autocomplete.getPlace();
+                if (!place.geometry) {
+                    console.log("No details available for input: '" + place.name + "'");
+                    return;
+                }
+                $('#searchLocation').val(place.formatted_address);
+            });
+
             $('#searchTripsForm').submit(function(event) {
                 event.preventDefault();
                 var searchLocation = $('#searchLocation').val().trim();
-    
+
                 if (!searchLocation) {
                     alert("Please enter a location to search.");
                     return;
                 }
-    
-                // AJAX call to your server
+
                 $.ajax({
                     url: '/query-new-trips',
                     type: 'GET',
@@ -110,7 +116,7 @@
                                                   '</div>';
                                 $('#searchResults').append(tripElement);
                             });
-    
+
                             $('.expressInterestBtn').click(function() {
                                 var tripId = $(this).data('trip-id');
                                 expressInterest(tripId, this);
@@ -122,7 +128,7 @@
                     }
                 });
             });
-    
+
             function expressInterest(tripId, button) {
                 $.ajax({
                     url: '/express-interest',
