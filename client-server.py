@@ -65,12 +65,15 @@ def query_new_trips_route():
 
     if search_location:
         try:
-            # Call the orchestrator function to get matching trips
             matching_trips = get_matching_trips(search_location, current_user_id)
+            # Convert ObjectId to string
+            for trip in matching_trips:
+                trip['_id'] = str(trip['_id'])
             return jsonify(matching_trips)
         except FileNotFoundError as e:
             return jsonify({'error': str(e)}), 404
         except Exception as e:
+            app.logger.error(f"Error in query_new_trips_route: {e}")
             return jsonify({'error': str(e)}), 500
     else:
         return render_template('query_trips.html')
