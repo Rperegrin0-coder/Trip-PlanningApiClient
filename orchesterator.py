@@ -14,7 +14,7 @@ from pymongo import MongoClient
 
 
 # MongoDB connection details
-mongo_uri = "mongodb+srv://doadmin:ro243kLaD0GN5796@db-mongodb-nyc3-59765-a337414d.mongo.ondigitalocean.com/admin"
+mongo_uri = "mongodb+srv://doadmin:ro243kLaD0GN5796@db-mongodb-nyc3-59765-a337414d.mongo.ondigitalocean.com/admin?tls=true&authSource=admin&replicaSet=db-mongodb-nyc3-59765"
 
 
 client = MongoClient(mongo_uri)
