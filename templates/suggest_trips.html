@@ -62,7 +62,7 @@
         <label for="datetime">Datetime:</label>
         <input type="datetime-local" id="datetime" name="datetime" required>
         
-        <!-- Other fields as required -->
+        
 
         <button id="suggestTripBtn">Suggest Trip</button>
     </form>
@@ -78,7 +78,7 @@
                 var formData = {
                     location: $('#location').val(),
                     datetime: $('#datetime').val(),
-                    // Add other form fields as needed
+                    
                 };
     
                 console.log('formData:', formData);
@@ -96,7 +96,7 @@
                         // Redirect after showing the alert, or use a modal and set a timeout
                         setTimeout(function() {
                             window.location.href = '/Travelbuddyhome';
-                        }, 5000); // Redirect after 5 seconds
+                        }, 1000); // Redirect after 1 second
                     },
                     error: function() {
                         alert('An error occurred while suggesting the trip.');
