@@ -143,8 +143,8 @@ def check_interests_route():
 
 
 
-@app.route('/generate-user-id', methods=['GET'])
-def generate_user_id_route():
+#@app.route('/generate-user-id', methods=['GET'])
+#def generate_user_id_route():
     generated_id = generate_user_id()
     return jsonify({"user_id": generated_id}), 200
 
