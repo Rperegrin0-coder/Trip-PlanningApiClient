@@ -1,6 +1,6 @@
-"""This module contains utilities for handling trip proposals in the Travel Buddy Finder app."""
+"""This module contains development for handling trip proposals in the Travel Buddy Finder app."""
 from flask import Flask, jsonify,session,request,render_template, redirect, url_for
-from orchesterator import update_user_interests,generate_user_id, query_new_trips, propose_new_trip, check_interests, orchestrate_registration, orchestrate_login,get_matching_trips
+from orchesterator import update_user_interests,generate_user_id, propose_new_trip, check_interests, orchestrate_registration, orchestrate_login,get_matching_trips
 
 app = Flask(__name__)
 
@@ -46,11 +46,6 @@ def login_page():
 
 
 
-@app.route('/generate-user-id', methods=['GET'])
-def generate_user_id_route():
-    generated_id = generate_user_id()
-    return jsonify({"user_id": generated_id}), 200
-
 
 
     
@@ -63,12 +58,17 @@ def query_new_trips_route():
 
     current_user_id = session['user_id']
 
+     # Check if a search location is provided
     if search_location:
         try:
+            # Attempt to find trips matching the search location and current user ID
             matching_trips = get_matching_trips(search_location, current_user_id)
-            # Convert ObjectId to string
+            
+             # Convert MongoDB ObjectId to string for JSON serialization
             for trip in matching_trips:
                 trip['_id'] = str(trip['_id'])
+
+                #Return the list of matching trips as a JSON response
             return jsonify(matching_trips)
         except FileNotFoundError as e:
             return jsonify({'error': str(e)}), 404
@@ -82,15 +82,19 @@ def query_new_trips_route():
 @app.route('/suggest_trip', methods=['GET', 'POST'])
 def suggest_trip():
     if request.method == 'POST':
-        user_id = session.get('user_id')  # Retrieve user ID from session
+        # Retrieve the user ID from the session, if logged in
+        user_id = session.get('user_id')  
         print("User ID from session:", user_id)
         if user_id:
+             # Extract trip data sent in JSON format in the request body
             trip_data = request.json
             location = trip_data.get('location')
             datetime = trip_data.get('datetime')
 
             # Call propose_new_trip function to suggest the trip
             response = propose_new_trip(location, datetime, user_id)
+
+            # Return the response from the propose_new_trip function as JSON
             return jsonify(response)
         else:
             return jsonify({'error': 'User not authenticated'}), 401
@@ -104,10 +108,16 @@ def express_interest():
     if 'user_id' not in session:
         return jsonify({'error': 'User not authenticated'}), 401
 
+    # Retrieve the authenticated user's ID from the session
     user_id = session['user_id']
+
+    # Extract data sent in JSON format in the request body
     data = request.json
+
+     # Extract 'tripId' from the data, which represents the trip the user is interested in
     trip_id = data.get('tripId')
 
+     # Check if 'tripId' is provided in the request
     if not trip_id:
         return jsonify({'error': 'Missing trip ID'}), 400
 
@@ -116,6 +126,7 @@ def express_interest():
         return jsonify({'message': 'Interest recorded successfully'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/check-interests', methods=['GET'])
 def check_interests_route():
@@ -129,11 +140,16 @@ def check_interests_route():
 
     return render_template('check_interest.html', interests=interest_data)
 
+
+
+
+#@app.route('/generate-user-id', methods=['GET'])
+#def generate_user_id_route():
+    #generated_id = generate_user_id()
+    #return jsonify({"user_id": generated_id}), 200
+
+
 app.secret_key = '3Equantum'
-
-
-
-
 
 if __name__ == '__main__':
     # Start the Flask application in debug mode
