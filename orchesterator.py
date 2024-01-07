@@ -1,17 +1,10 @@
-import json
+import string
 from werkzeug.security import generate_password_hash, check_password_hash
 import requests
-from flask import jsonify,request
-import os.path
-import string
 from datetime import datetime
-import  os
 import random
-import pytz
-from datetime import datetime
-from flask_sqlalchemy import SQLAlchemy
 from pymongo import MongoClient
-import logging
+
 
 
 # MongoDB connection details
@@ -21,43 +14,48 @@ mongodb_client = MongoClient(mongo_uri)
 db = mongodb_client["cloud-coursework"]
 print("Connected to the MongoDB database!")
 
+
 def generate_user_id():
-
-
-    # Make a GET request to the external service to fetch a random user ID
     url = 'https://www.random.org/integers/?num=1&min=1&max=1000&col=1&base=10&format=plain&rnd=new'
     
-    response = requests.get(url)
-    
-    if response.status_code == 200:
-        # Assuming the response contains the random user ID
-        random_user_id = response.text.strip()  # Extract the random user ID
-        return random_user_id  # Return just the ID
-    else:
-        return None  # Return None or handle error case appropriately
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Raises an HTTPError for bad status codes
 
+        # Extract the random user ID from the plain text response and convert to JSON
+        random_user_id = response.text.strip()
+        json_data = {"random_user_id": int(random_user_id)}
+
+        return json_data
+
+    except requests.exceptions.RequestException as e:
+        print(f"Error occurred during request: {e}")
+        return None
 
 def generate_trip_id():
-    # Make a GET request to the external service to fetch a random number between 1 and 1000
+    # Make a GET request to the external service to fetch a random number in plain text format
     url = 'https://www.random.org/integers/?num=1&min=1&max=1000&col=1&base=10&format=plain&rnd=new'
     
-    response = requests.get(url)
-    
-    if response.status_code == 200:
-        # Assuming the response contains the random number
-        random_number = response.text.strip()  # Extract the random number
-        
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Raises an HTTPError for bad status codes
+
+        # Convert the plain text response to JSON format
+        random_number = int(response.text.strip())
+        data = {"random_number": random_number}
+
         # Generate two random letters
         random_letters = ''.join(random.choice(string.ascii_uppercase) for _ in range(2))
         
         # Combine the random letters and number to create the trip ID
-        trip_id = f"{random_letters}{random_number}"
+        trip_id = f"{random_letters}{data['random_number']}"
         
         return trip_id  # Return the generated trip ID
-    else:
-        return None  # Return None or handle error case appropriately
 
+    except requests.exceptions.RequestException as e:
+        print(f"Error occurred during request: {e}")
 
+    return None  # Return None if any error occurs
 
 def get_matching_trips(search_location, user_id):
     matching_trips = []
@@ -77,22 +75,33 @@ def get_matching_trips(search_location, user_id):
         raise
 
     return matching_trips
-
-def query_new_trips(search_location, exclude_user_id):
+   
+def geocode_location(location):
     try:
-        # Query MongoDB for trips matching the location and excluding the current user
-        matching_trips = db.proposed_trips.find({
-            "location": {"$regex": f"^{search_location}$", "$options": "i"},
-            "user_id": {"$ne": exclude_user_id}
-        })
+        #  API key
+        api_key = 'AIzaSyBPELEebdsZFbEQGkbHMKVvVSxu5PJ9jec'
 
-        return list(matching_trips)
+        # Format the location string for the API request
+        formatted_location = location.replace(' ', '+')
+
+        # Make the API call to geocode the location
+        api_endpoint = f'https://maps.googleapis.com/maps/api/geocode/json?address={formatted_location}&key={api_key}'
+        response = requests.get(api_endpoint)
+
+        if response.status_code == 200:
+            geocode_data = response.json()
+            if geocode_data['status'] == 'OK' and len(geocode_data['results']) > 0:
+                # Extract the latitude and longitude from the API response
+                latitude = geocode_data['results'][0]['geometry']['location']['lat']
+                longitude = geocode_data['results'][0]['geometry']['location']['lng']
+                return (latitude, longitude)  # Return coordinates as a tuple
+            else:
+                return None  # Unable to geocode the location
+        else:
+            return None  # Unable to fetch geocoding data
 
     except Exception as e:
-        raise Exception(f"Error querying new trips: {e}")
-
-
-
+        return None  # An error occurred during geocoding
 
 def propose_new_trip(location, datetime_str, user_id):
     try:
@@ -143,36 +152,6 @@ def propose_new_trip(location, datetime_str, user_id):
     except Exception as e:
         return {'error': str(e)}
 
-
-
-    
-def geocode_location(location):
-    try:
-        # Replace 'YOUR_API_KEY' with your actual Google Maps API key
-        api_key = 'AIzaSyBPELEebdsZFbEQGkbHMKVvVSxu5PJ9jec'
-
-        # Format the location string for the API request
-        formatted_location = location.replace(' ', '+')
-
-        # Make the API call to geocode the location
-        api_endpoint = f'https://maps.googleapis.com/maps/api/geocode/json?address={formatted_location}&key={api_key}'
-        response = requests.get(api_endpoint)
-
-        if response.status_code == 200:
-            geocode_data = response.json()
-            if geocode_data['status'] == 'OK' and len(geocode_data['results']) > 0:
-                # Extract the latitude and longitude from the API response
-                latitude = geocode_data['results'][0]['geometry']['location']['lat']
-                longitude = geocode_data['results'][0]['geometry']['location']['lng']
-                return (latitude, longitude)  # Return coordinates as a tuple
-            else:
-                return None  # Unable to geocode the location
-        else:
-            return None  # Unable to fetch geocoding data
-
-    except Exception as e:
-        return None  # An error occurred during geocoding
-
 def update_user_interests(user_id, trip_id):
     try:
         # Check if the user has already expressed interest in this trip
@@ -195,28 +174,19 @@ def update_user_interests(user_id, trip_id):
     except Exception as e:
         raise Exception(f"Error updating user interests: {e}")
 
-
-
 def check_interests(user_id):
     try:
-        print(f"Checking interests for user_id: {user_id}")  # Debugging statement
-
         # Query MongoDB for proposed trips related to the user
         proposed_trips = db.proposed_trips.find({"user_id": user_id})
-        proposed_trips_count = db.proposed_trips.count_documents({"user_id": user_id})  # Correct count method
-        print(f"Found {proposed_trips_count} proposed trips for user_id {user_id}")  # Debugging statement
-
+        
         interest_data = []
         for trip in proposed_trips:
             trip_id = trip['trip_id']
-            print(f"Checking interested users for trip_id: {trip_id}")  # Debugging statement
-
+            
             # Query MongoDB for users interested in the trip
             interested_users_query = {"trip_ids": trip_id}
             interested_users = db.user_interests.find(interested_users_query)
-            interested_users_count = db.user_interests.count_documents(interested_users_query)  # Correct count method
-            print(f"Found {interested_users_count} interested users for trip_id {trip_id}")  # Debugging statement
-
+            
             for interested_user in interested_users:
                 interested_user_id = interested_user['_id']  # Changed variable name
 
@@ -225,7 +195,7 @@ def check_interests(user_id):
                     {"userID": interested_user_id},
                     {"_id": 0, "email": 1}
                 )
-                print(f"User email found: {interested_user_email['email']}" if interested_user_email else "No email found for interested_user_id: {interested_user_id}")  # Debugging statement
+                
 
                 if interested_user_email:
                     # Include trip details in the interest data
@@ -289,7 +259,6 @@ def orchestrate_login(login_credentials):
 
     except Exception as e:
         return {"error": str(e)}
-
 
 def get_user_email(user_id):
     try:
