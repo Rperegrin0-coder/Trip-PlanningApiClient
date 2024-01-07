@@ -11,6 +11,7 @@ import pytz
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 from pymongo import MongoClient
+import logging
 
 
 # MongoDB connection details
@@ -176,7 +177,7 @@ def update_user_interests(user_id, trip_id):
     try:
         # Check if the user has already expressed interest in this trip
         existing_interest = db.user_interests.find_one(
-            {"_id": f"user_{user_id}", f"user_{user_id}": trip_id}
+            {"_id": user_id, "trip_ids": trip_id}
         )
 
         if existing_interest:
@@ -184,8 +185,8 @@ def update_user_interests(user_id, trip_id):
 
         # Update user interests in MongoDB
         db.user_interests.update_one(
-            {"_id": f"user_{user_id}"},
-            {"$addToSet": {f"user_{user_id}": trip_id}},
+            {"_id": user_id},
+            {"$addToSet": {"trip_ids": trip_id}},
             upsert=True
         )
 
@@ -194,30 +195,37 @@ def update_user_interests(user_id, trip_id):
     except Exception as e:
         raise Exception(f"Error updating user interests: {e}")
 
-    
+
+
 def check_interests(user_id):
     try:
+        print(f"Checking interests for user_id: {user_id}")  # Debugging statement
+
         # Query MongoDB for proposed trips related to the user
         proposed_trips = db.proposed_trips.find({"user_id": user_id})
+        proposed_trips_count = db.proposed_trips.count_documents({"user_id": user_id})  # Correct count method
+        print(f"Found {proposed_trips_count} proposed trips for user_id {user_id}")  # Debugging statement
 
         interest_data = []
         for trip in proposed_trips:
             trip_id = trip['trip_id']
+            print(f"Checking interested users for trip_id: {trip_id}")  # Debugging statement
 
             # Query MongoDB for users interested in the trip
-            interested_users = db.user_interests.find({
-                f"user_{user_id}": {"$in": [trip_id]}
-            })
+            interested_users_query = {"trip_ids": trip_id}
+            interested_users = db.user_interests.find(interested_users_query)
+            interested_users_count = db.user_interests.count_documents(interested_users_query)  # Correct count method
+            print(f"Found {interested_users_count} interested users for trip_id {trip_id}")  # Debugging statement
 
             for interested_user in interested_users:
-                # Remove 'user_' prefix from interested user ID
-                formatted_user_id = interested_user['_id'].replace('user_', '')
+                interested_user_id = interested_user['_id']  # Changed variable name
 
                 # Query MongoDB for the interested user's email
                 interested_user_email = db.users.find_one(
-                    {"userID": formatted_user_id},
+                    {"userID": interested_user_id},
                     {"_id": 0, "email": 1}
                 )
+                print(f"User email found: {interested_user_email['email']}" if interested_user_email else "No email found for interested_user_id: {interested_user_id}")  # Debugging statement
 
                 if interested_user_email:
                     # Include trip details in the interest data
@@ -227,10 +235,11 @@ def check_interests(user_id):
                         'trip_details': trip  # Include the entire trip object
                     })
 
+        print(f"Interest data collected: {interest_data}")  # Debugging statement
         return interest_data
 
     except Exception as e:
-        print(f"Error checking interests: {e}")
+        print(f"Error checking interests: {e}")  # Debugging statement
         raise
 
 def orchestrate_registration(user_data):
